@@ -1,0 +1,6 @@
+Model,0,1,2
+attnresunet,0.4483,0.0323,1.0
+attnunet,0.4878,0.0,1.0
+mmarunet,0.0,0.0,1.0
+resunet,0.459,0.0136,1.0
+unet,0.4,0.0,1.0

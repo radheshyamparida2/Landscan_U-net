@@ -1,0 +1,4 @@
+Patch,GT_Pixels,IoU,Model,Pred_Pixels
+2,0,1.0,attnresunet,0
+0,44,0.4483,attnresunet,40
+1,36,0.0323,attnresunet,28

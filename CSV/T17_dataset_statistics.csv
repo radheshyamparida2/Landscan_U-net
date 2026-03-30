@@ -1,0 +1,11 @@
+Statistic,Value
+N_patches,3.0
+Patch_Height,64.0
+Patch_Width,64.0
+N_channels,17.0
+Total_pixels,12288.0
+Total_landslide_pixels,80.0
+Landslide_fraction_pct,0.651
+Min_ls_per_patch,0.0
+Max_ls_per_patch,44.0
+Mean_ls_per_patch,26.67
