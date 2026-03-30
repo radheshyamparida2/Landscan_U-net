@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LandScan AI — Landslide Detection System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<canvas id="topo-canvas"></canvas>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-dot"></div>
+    LandScan AI
+  </div>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#performance">Performance</a>
+    <a href="#bands">Imagery</a>
+    <a href="#confidence">Confidence</a>
+    <a href="#threshold">Threshold</a>
+    <a href="#spectral">Spectral</a>
+    <a href="#channel">Channels</a>
+    <a href="#errors">Errors</a>
+    <a href="#predictions">Predictions</a>
+    <a href="#pipeline">Pipeline</a>
+  </div>
+  <div class="nav-badge">RESEARCH BUILD</div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-scan"></div>
+  <div class="hero-eye">[ SATELLITE INTELLIGENCE SYSTEM ]</div>
+  <h1 class="hero-title">
+    LAND<span>SCAN</span>
+    <em>AI</em>
+  </h1>
+  <p class="hero-sub">
+    Deep-learning landslide detection from Sentinel-2 multispectral imagery.
+    Five encoder–decoder architectures evaluated across pixel metrics, morphology,
+    boundary accuracy, and spatial error analysis.
+  </p>
+  <div class="hero-stats">
+    <div><div class="hstat-val">5</div><div class="hstat-lbl">Architectures</div></div>
+    <div><div class="hstat-val">17</div><div class="hstat-lbl">Input Channels</div></div>
+    <div><div class="hstat-val">49.4%</div><div class="hstat-lbl">Best Mean IoU</div></div>
+    <div><div class="hstat-val">80ep</div><div class="hstat-lbl">Fine-tuning</div></div>
+    <div><div class="hstat-val">0.982</div><div class="hstat-lbl">Best ROC-AUC</div></div>
+  </div>
+  <div class="hero-cta">
+    <button class="btn-p" onclick="document.getElementById('overview').scrollIntoView({behavior:'smooth'})">
+      Explore Results
+    </button>
+    <button class="btn-g" onclick="document.getElementById('pipeline').scrollIntoView({behavior:'smooth'})">
+      View Pipeline
+    </button>
+  </div>
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ══ OVERVIEW ══ -->
+<section id="overview">
+  <div class="sw">
+    <div class="slbl">System Overview</div>
+    <h2 class="stitle">Best-in-Class <span>Results</span></h2>
+    <p class="sdesc">
+      Attention ResUNet leads across all major evaluation axes. Full model ranking
+      is derived from IoU, F1, Precision, Recall, AP, ROC-AUC, Kappa, MCC and Boundary F1.
+    </p>
+    <div class="mg">
+      <div class="mc"><div class="mc-lbl">Best Model</div><div class="mc-val a" style="font-size:1.2rem;letter-spacing:.04em">Attn-ResUNet</div><div class="mc-sub">Stage-2 fine-tuned</div></div>
+      <div class="mc"><div class="mc-lbl">IoU</div><div class="mc-val g">23.3%</div><div class="mc-sub">Best single-pass</div></div>
+      <div class="mc"><div class="mc-lbl">Mean IoU/Patch</div><div class="mc-val a">49.4%</div><div class="mc-sub">Patch-averaged</div></div>
+      <div class="mc"><div class="mc-lbl">ROC-AUC</div><div class="mc-val g">0.982</div><div class="mc-sub">Discriminative power</div></div>
+      <div class="mc"><div class="mc-lbl">Boundary F1</div><div class="mc-val o">52.2%</div><div class="mc-sub">Perimeter fidelity</div></div>
+      <div class="mc"><div class="mc-lbl">MCC</div><div class="mc-val a">0.376</div><div class="mc-sub">Matthews Corr.</div></div>
+    </div>
+
+    <!-- Real imagery figures from data -->
+    <div class="fig-full cc" style="margin-bottom:2rem">
+      <div class="cc-t">Model Comparison — <span>Bar Metrics (F1)</span></div>
+      <img src="images/F1_model_metrics_bar.png" alt="Model Metrics Bar" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cmp">
+      <div class="cc">
+        <div class="cc-t">Model <span>Radar Comparison</span></div>
+        <canvas id="radarChart" height="280"></canvas>
+      </div>
+      <div class="cc">
+        <div class="cc-t">All Models — <span>Pixel Metrics</span></div>
+        <table class="mt" id="overviewTable"></table>
+      </div>
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Extended Metrics — <span>AP · ROC-AUC · Kappa · MCC · Specificity</span></div>
+      <img src="images/F2_extended_metrics.png" alt="Extended Metrics" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Full-model Ranking — <span>All Axes</span></div>
+      <img src="images/F21_radar_chart.png" alt="Radar Chart Full" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:1rem">
+      <div class="cc-t">Model Ranking — <span>Full Table</span></div>
+      <table class="mt" id="rankingTable"></table>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PERFORMANCE ══ -->
+<section id="performance">
+  <div class="sw">
+    <div class="slbl">Performance Analysis</div>
+    <h2 class="stitle">Per-Patch <span>Deep Dive</span></h2>
+    <p class="sdesc">
+      Per-patch IoU and F1 heatmaps reveal where each model succeeds and fails
+      across the three evaluation scenes.
+    </p>
+
+    <div class="cg2" style="margin-bottom:2rem">
+      <div class="cc">
+        <div class="cc-t">Per-Patch <span>IoU Heatmap</span></div>
+        <img src="images/F3_per_patch_iou_heatmap.png" alt="Per-Patch IoU" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+      <div class="cc">
+        <div class="cc-t">Per-Patch <span>F1 Heatmap</span></div>
+        <img src="images/F4_per_patch_f1_heatmap.png" alt="Per-Patch F1" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+    </div>
+
+    <div class="ms" id="modelBtns">
+      <button class="mb" onclick="selectModel('unet',this)">UNet</button>
+      <button class="mb" onclick="selectModel('attnunet',this)">Attn-UNet</button>
+      <button class="mb" onclick="selectModel('resunet',this)">ResUNet</button>
+      <button class="mb active" onclick="selectModel('attnresunet',this)">Attn-ResUNet</button>
+      <button class="mb" onclick="selectModel('mmarunet',this)">MMAR-UNet</button>
+    </div>
+
+    <div class="md-panel" id="modelPanel"></div>
+
+    <div class="cg2">
+      <div class="cc">
+        <div class="cc-t">Per-Patch <span>F1 Score</span></div>
+        <canvas id="f1Chart" height="200"></canvas>
+      </div>
+      <div class="cc">
+        <div class="cc-t">Per-Patch <span>IoU</span></div>
+        <canvas id="iouChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="cc" style="margin-bottom:2.5rem">
+      <div class="cc-t">All Models — <span>F1 per Patch</span></div>
+      <canvas id="allF1Chart" height="180"></canvas>
+    </div>
+
+    <div class="cc" style="margin-bottom:1.5rem">
+      <div class="cc-t">Per-Patch Metrics — <span>Full Table</span></div>
+      <div style="overflow-x:auto">
+        <table class="mt" id="patchTable"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BAND IMAGERY ══ -->
+<section id="bands">
+  <div class="sw">
+    <div class="slbl">Sentinel-2 Imagery</div>
+    <h2 class="stitle">Multispectral <span>Band Composites</span></h2>
+    <p class="sdesc">
+      Six band-composite views of the evaluation scene: Natural Colour, False Colour,
+      SWIR, Red-Edge, Vegetation Index, and Urban Enhancement composites.
+    </p>
+
+    <div class="band-tabs" id="bandTabs">
+      <button class="btab active" onclick="showBand('natural',this)">Natural Colour</button>
+      <button class="btab" onclick="showBand('false',this)">False Colour</button>
+      <button class="btab" onclick="showBand('swir',this)">SWIR</button>
+      <button class="btab" onclick="showBand('rededge',this)">Red-Edge</button>
+      <button class="btab" onclick="showBand('veg',this)">Vegetation</button>
+      <button class="btab" onclick="showBand('urban',this)">Urban</button>
+    </div>
+
+    <div class="cc band-view" id="bandView">
+      <div class="cc-t" id="bandTitle">Natural Colour — <span>B4·B3·B2 RGB</span></div>
+      <img id="bandImg" src="images/F5_1_band_Natural_Colour.png" alt="Band Composite" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <!-- Sample patches -->
+    <div class="slbl" style="margin-top:2.5rem">Evaluation Patches</div>
+    <h3 style="font-size:1.3rem;font-weight:700;margin-bottom:.5rem;color:var(--text)">Sample <span style="color:var(--accent)">Ground Truth</span></h3>
+    <p style="font-size:.88rem;color:var(--text2);margin-bottom:1.5rem">Three 64×64 patches extracted from the study area (17 spectral channels each).</p>
+    <div class="sp-grid">
+      <div class="sp-card">
+        <img src="images/sample_0.png" alt="Sample 0" loading="lazy">
+        <div class="sp-lbl"><span class="sp-name">Patch 0</span><span class="sp-tag">44 landslide px</span></div>
+      </div>
+      <div class="sp-card">
+        <img src="images/sample_1.png" alt="Sample 1" loading="lazy">
+        <div class="sp-lbl"><span class="sp-name">Patch 1</span><span class="sp-tag">36 landslide px</span></div>
+      </div>
+      <div class="sp-card">
+        <img src="images/sample_2.png" alt="Sample 2" loading="lazy">
+        <div class="sp-lbl"><span class="sp-name">Patch 2</span><span class="sp-tag">0 landslide px (background)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CONFIDENCE MAPS ══ -->
+<section id="confidence">
+  <div class="sw">
+    <div class="slbl">Prediction Confidence</div>
+    <h2 class="stitle">Confidence <span>Maps</span></h2>
+    <p class="sdesc">
+      Per-pixel confidence maps for all five architectures. Attn-ResUNet produces the most
+      spatially focused high-confidence regions aligned with ground-truth boundaries.
+    </p>
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">All Models — <span>Confidence Maps</span></div>
+      <img src="images/F7_confidence_maps_all_models.png" alt="Confidence Maps" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">All Models — <span>Natural Colour Overlay</span></div>
+      <img src="images/F6_1_all_models_Natural_Colour.png" alt="All models natural colour" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cg2">
+      <div class="cc">
+        <div class="cc-t">All Models — <span>False Colour Overlay</span></div>
+        <img src="images/F6_2_all_models_False_Colour.png" alt="All models false colour" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+      <div class="cc">
+        <div class="cc-t">All Models — <span>SWIR Composite Overlay</span></div>
+        <img src="images/F6_3_all_models_SWIR_Composite.png" alt="All models SWIR" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ THRESHOLD ══ -->
+<section id="threshold">
+  <div class="sw">
+    <div class="slbl">Threshold Analysis</div>
+    <h2 class="stitle">Decision <span>Threshold Sweep</span></h2>
+    <p class="sdesc">
+      Sweeping the classification threshold from 0.1 to 0.9 reveals the precision–recall
+      trade-off and the optimal operating point per model and metric.
+    </p>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Threshold <span>Sensitivity — IoU · F1 · Precision · Recall</span></div>
+      <img src="images/F8_threshold_sensitivity.png" alt="Threshold Sensitivity" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Threshold Sweep — <span>Visual Segmentation</span></div>
+      <img src="images/F9_threshold_sweep_visual.png" alt="Threshold Sweep Visual" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">PR &amp; ROC <span>Curves — All Models</span></div>
+      <img src="images/F10_pr_roc_curves.png" alt="PR ROC Curves" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Per-Patch <span>PR &amp; ROC Curves</span></div>
+      <img src="images/F11_per_patch_pr_roc.png" alt="Per-Patch PR ROC" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:1rem">
+      <div class="cc-t">Best Threshold <span>per Model &amp; Metric</span></div>
+      <table class="mt" id="thresholdTable"></table>
+    </div>
+
+    <div class="cg2" style="margin-top:2rem">
+      <div class="cc">
+        <div class="cc-t">Threshold — <span>IoU Sweep (Avg)</span></div>
+        <canvas id="threshIouChart" height="200"></canvas>
+      </div>
+      <div class="cc">
+        <div class="cc-t">Threshold — <span>F1 Sweep (Avg)</span></div>
+        <canvas id="threshF1Chart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SPECTRAL ══ -->
+<section id="spectral">
+  <div class="sw">
+    <div class="slbl">Spectral Analysis</div>
+    <h2 class="stitle">Channel <span>Spectral Signatures</span></h2>
+    <p class="sdesc">
+      Mean spectral values inside vs. outside landslide regions expose the discriminative
+      channels: SWIR1 (B11), EVI, NIR (B8), and Blue (B2) show the strongest separation.
+    </p>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Spectral Signatures — <span>Inside vs. Outside Landslide</span></div>
+      <img src="images/F12_spectral_signature.png" alt="Spectral Signature" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Per-Patch <span>Spectral Profiles</span></div>
+      <img src="images/F13_per_patch_spectral_profiles.png" alt="Per-Patch Spectral Profiles" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Channel Contrast <span>Landslide vs Background Patches</span></div>
+      <img src="images/F14_channel_contrast_patches.png" alt="Channel Contrast" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:1rem">
+      <div class="cc-t">Channel Statistics — <span>Global Distribution</span></div>
+      <div style="overflow-x:auto">
+        <table class="mt" id="chanStatsTable"></table>
+      </div>
+    </div>
+
+    <div class="cg2" style="margin-top:2rem">
+      <div class="cc">
+        <div class="cc-t">Mean Pixel Value <span>Inside vs Outside Landslide</span></div>
+        <canvas id="spectralBarChart" height="220"></canvas>
+      </div>
+      <div class="cc">
+        <div class="cc-t">Spectral <span>Difference (Inside − Outside)</span></div>
+        <canvas id="spectralDiffChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CHANNEL IMPORTANCE ══ -->
+<section id="channel">
+  <div class="sw">
+    <div class="slbl">Channel Attribution · XAI</div>
+    <h2 class="stitle">Channel <span>Importance Analysis</span></h2>
+    <p class="sdesc">
+      Occlusion-based sensitivity analysis reveals B11 (SWIR1) and EVI as the most
+      critical channels — occluding them causes the largest IoU drop.
+    </p>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Channel Importance — <span>Occlusion Sensitivity (Attn-ResUNet)</span></div>
+      <img src="images/F15_channel_importance_occlusion.png" alt="Channel Importance" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cg2">
+      <div class="cc">
+        <div class="cc-t">Confusion Matrices — <span>Normalised</span></div>
+        <img src="images/F16_confusion_matrices.png" alt="Confusion Matrices Normalised" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+      <div class="cc">
+        <div class="cc-t">Confusion Matrices — <span>Raw Counts</span></div>
+        <img src="images/F17_confusion_matrices_raw.png" alt="Confusion Matrices Raw" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+    </div>
+
+    <div class="cc" style="margin-top:2rem">
+      <div class="cc-t">Channel Attribution <span>Importance (Occlusion Sensitivity)</span></div>
+      <canvas id="chanChart" height="200"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ERROR DISTANCES ══ -->
+<section id="errors">
+  <div class="sw">
+    <div class="slbl">Spatial Error Analysis</div>
+    <h2 class="stitle">Error Distance <span>Profiles</span></h2>
+    <p class="sdesc">
+      Distribution of False Positive and False Negative distances from the ground-truth
+      boundary. Attn-ResUNet achieves the lowest mean FP distance at 4.52 m.
+    </p>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Error Distance <span>Profiles — FP &amp; FN Distributions</span></div>
+      <img src="images/F18_error_distance_profiles.png" alt="Error Distance Profiles" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:1rem">
+      <div class="cc-t">Error Distance <span>Summary Table</span></div>
+      <table class="mt" id="errorTable"></table>
+    </div>
+
+    <div class="cg2" style="margin-top:2rem">
+      <div class="cc">
+        <div class="cc-t">Mean FP Distance <span>(m)</span></div>
+        <canvas id="fpDistChart" height="220"></canvas>
+      </div>
+      <div class="cc">
+        <div class="cc-t">FP &amp; FN <span>Pixel Counts</span></div>
+        <canvas id="fpfnChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PREDICTIONS ══ -->
+<section id="predictions">
+  <div class="sw">
+    <div class="slbl">Qualitative Results</div>
+    <h2 class="stitle">Best &amp; Worst <span>Predictions</span></h2>
+    <p class="sdesc">
+      Multi-band visualisations of the best and worst performing patches,
+      with zoomed false-positive and false-negative regions for error inspection.
+    </p>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Best Predictions — <span>Multiband View</span></div>
+      <img src="images/F19_best_predictions_multiband.png" alt="Best Predictions" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cc" style="margin-bottom:2rem">
+      <div class="cc-t">Worst Predictions — <span>Multiband View</span></div>
+      <img src="images/F19_worst_predictions_multiband.png" alt="Worst Predictions" loading="lazy" style="width:100%;border-radius:4px;display:block">
+    </div>
+
+    <div class="cg2">
+      <div class="cc">
+        <div class="cc-t">False Positive <span>Zoom — Multiband</span></div>
+        <img src="images/F20_fp_zoom_multiband.png" alt="FP Zoom" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+      <div class="cc">
+        <div class="cc-t">False Negative <span>Zoom — Multiband</span></div>
+        <img src="images/F20_fn_zoom_multiband.png" alt="FN Zoom" loading="lazy" style="width:100%;border-radius:4px;display:block">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PIPELINE ══ -->
+<section id="pipeline">
+  <div class="sw">
+    <div class="slbl">Research Pipeline</div>
+    <h2 class="stitle">End-to-End <span>Workflow</span></h2>
+    <p class="sdesc">
+      Nine Python modules orchestrate data preparation, multi-stage training,
+      XAI attribution, object extraction, and evaluation.
+    </p>
+    <div class="md-panel">
+      <div class="pipeline" id="pipeEl"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-l">
+    <strong>LandScan AI</strong> · Landslide Detection System · Research Build
+  </div>
+  <div class="foot-r">
+    Sentinel-2 · 17-channel · 5 Architectures · Attention ResUNet Best Model
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
